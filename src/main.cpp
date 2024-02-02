@@ -9,7 +9,7 @@
 #include "motor.h"
 #include "pid.h"
 #include "vehicle.h"
-#include "RWC-slave.h"
+#include "rwc-comm.h"
 
 #define BNO_TICK_FREQ 500
 #define BNO_TICK_PERIOD 1000000 / BNO_TICK_FREQ - 1
