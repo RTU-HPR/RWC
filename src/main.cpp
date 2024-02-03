@@ -9,7 +9,7 @@
 #include "motor.h"
 #include "pid.h"
 #include "vehicle.h"
-#include "RWC-slave.h"
+#include "rwc-comm.h"
 
 #define BNO_TICK_FREQ 500
 #define BNO_TICK_PERIOD 1000000 / BNO_TICK_FREQ - 1
@@ -17,7 +17,19 @@
 #define MOTOR_TICK_PERIOD 1000000 / MOTOR_TICK_FREQ - 1
 #define TELEM_FREQ 40
 #define TELEM_TICK_PERIOD 1000 / TELEM_FREQ - 1
+#define COMM_UPDATE_FREQ 10
+#define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
+
+#define KEEP_ALIVE_DEAD 5000
+
+#define I2C_SLAVE_SCL_PIN 15
+#define I2C_SLAVE_SDA_PIN 16
+#define I2C_SLAVE_ADDR 0x01
+#define I2C_SLAVE_FREQ 100000
+
+#define BNO_SDA 48
+#define BNO_SCL 47
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -30,8 +42,9 @@ PID speedPid(speedGains, -250.0, 250.0);
 LowPassFIR filter(23);
 
 VehicleConfig rwc;
+RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick;
+uint64_t motorTick, stabTick, commTick;
 
 const PROGMEM float filterk[] = {
     0.009082479966205859,
@@ -61,9 +74,11 @@ const PROGMEM float filterk[] = {
 
 void setup()
 {
+    Wire.setPins(BNO_SDA, BNO_SCL);
 
-    Wire.setPins(48, 47);
-
+    Wire1.onReceive(i2cCommReceive);
+    Wire1.onRequest(i2cCommRequest);
+    Wire1.begin((uint8_t)I2C_SLAVE_ADDR, I2C_SLAVE_SDA_PIN, I2C_SLAVE_SCL_PIN, I2C_SLAVE_FREQ);
     if (!bno.begin())
     {
         while (1)
@@ -80,12 +95,13 @@ void setup()
 void loop()
 {
 
-    if (rwc.state = STAB)
+    if (rwc.state = STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
             motorTick = micros();
             motor0.tick(micros());
+            rwc.motorSpeed = motor0.speed;
         }
 
         if (micros() - stabTick > BNO_TICK_PERIOD)
@@ -128,4 +144,13 @@ void loop()
         orientationPid.reset();
         speedPid.reset();
     }
+
+    if (millis() - commTick > COMM_UPDATE_PERIOD)
+    {
+        commTick = millis();
+
+        rwc.newData |= NEW_ORIENTATION | NEW_ANG_SPEED | NEW_MOTOR_SPEED;
+    }
+
+    comm.handler();
 }
