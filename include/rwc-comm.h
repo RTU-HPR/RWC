@@ -16,6 +16,7 @@
 #include "Wire.h"
 #include "stdlib.h"
 #include "vehicle.h"
+#include "Checksums.h"
 
 #define BUFFER_LEN 128
 

@@ -29,6 +29,11 @@ void RWCComHandler::handler()
         uint8_t opCode = _requestBuffer[0];
         uint8_t dataSize;
 
+        for (uint8_t i = 0; i < BUFFER_LEN; i++)
+        {
+            _responseBuffer[i] = 0;
+        }
+
         switch (opCode)
         {
         case STATE:
@@ -65,7 +70,47 @@ void RWCComHandler::handler()
 
         if (_requestLen == 3)
         { // if request is only 3 bytes long (opCode + CRC) - no new data arrived -> read request
+            if (!Checksum_CCITT_16::verify(_requestBuffer, 3))
+            {
+                _vehicleConfig->error |= CRC_ERR;
+                return;
+            }
 
+            switch (opCode)
+            {
+            case STATE:
+                _responseBuffer[0] = _vehicleConfig->state;
+                break;
+            case KEEP_ALIVE:
+                _responseBuffer[0] = 0;
+                break;
+            case ORIENTATION_MODE:
+                _responseBuffer[0] = _vehicleConfig->mode;
+                break;
+            case ORIENTATION_SETPOINT:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->orientationSetpoint, 4);
+                break;
+            case SPEED_SETPOINT:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->speedSetpoint, 4);
+                break;
+            case ORIENTATION:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->orientation, 4);
+                break;
+            case ANG_SPEED:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->angSpeed, 4);
+                break;
+            case MOTOR_SPEED:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->motorSpeed, 4);
+                break;
+            case NEW_DATA:
+                _responseBuffer[0] = _vehicleConfig->newData;
+                _vehicleConfig->newData = 0;
+                break;
+            case ERROR:
+                _responseBuffer[0] = _vehicleConfig->error;
+                _vehicleConfig->error = 0;
+                break;
+            }
         }
         else
         { // if request is more then 3 bytes long -> write request
@@ -91,6 +136,10 @@ void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
     _requestLen = len;
 
     _requestHandled = 0;
+}
+
+void RWCComHandler::generateResponse(uint8_t *responseBuffer, uint8_t *responseLen){
+    
 }
 
 void i2cCommReceive(int len)
