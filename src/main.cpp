@@ -70,7 +70,6 @@ const PROGMEM float filterk[] = {
 
 void setup()
 {
-
     Wire.setPins(BNO_SDA, BNO_SCL);
 
     Wire1.onReceive(i2cCommReceive);

@@ -39,7 +39,7 @@ public:
 
     void handler();
     void newRequest(uint8_t *request, uint8_t len);
-    void generateResponse(uint8_t *responseBuffer, uint8_t *responseLen);
+    void generateResponse(uint8_t *response, uint8_t *responseLen);
 };
 
 #endif

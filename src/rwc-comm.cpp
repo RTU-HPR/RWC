@@ -73,8 +73,11 @@ void RWCComHandler::handler()
             if (!Checksum_CCITT_16::verify(_requestBuffer, 3))
             {
                 _vehicleConfig->error |= CRC_ERR;
+                _requestHandled = 1;
                 return;
             }
+
+            _responseLen = dataSize;
 
             switch (opCode)
             {
@@ -138,8 +141,13 @@ void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
     _requestHandled = 0;
 }
 
-void RWCComHandler::generateResponse(uint8_t *responseBuffer, uint8_t *responseLen){
-    
+void RWCComHandler::generateResponse(uint8_t *response, uint8_t *responseLen)
+{
+    *responseLen = _responseLen + 2;
+    uint16_t crc = Checksum_CCITT_16::calculate(_responseBuffer, _responseLen);
+    memcpy(response, _responseBuffer, _responseLen);
+    response[_responseLen] = crc >> 8;
+    response[_responseLen + 1] = crc & 0xFF;
 }
 
 void i2cCommReceive(int len)
@@ -161,4 +169,6 @@ void i2cCommRequest()
     uint8_t buffer[128];
     uint8_t len;
     comm.generateResponse(buffer, &len);
+
+    Wire1.write(buffer, len);
 }
