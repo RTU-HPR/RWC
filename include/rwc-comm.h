@@ -33,6 +33,8 @@ private:
     uint8_t _responseBuffer[BUFFER_LEN];
     VehicleConfig *_vehicleConfig;
 
+    void _updateKeepalive();
+
 public:
     RWCComHandler(VehicleConfig *config);
     ~RWCComHandler();

@@ -117,6 +117,34 @@ void RWCComHandler::handler()
         }
         else
         { // if request is more then 3 bytes long -> write request
+            if (!Checksum_CCITT_16::verify(_requestBuffer, 1 + dataSize + 2))
+            {
+                _vehicleConfig->error |= CRC_ERR;
+                _requestHandled = 1;
+                return;
+            }
+
+            uint8_t payload[4];
+            memcpy(payload, _requestBuffer + 1, dataSize);
+
+            switch (opCode)
+            {
+            case STATE:
+                _vehicleConfig->state = payload[0];
+                break;
+            case KEEP_ALIVE:
+                _updateKeepalive();
+                break;
+            case ORIENTATION_MODE:
+                _vehicleConfig->mode = payload[0];
+                break;
+            case ORIENTATION_SETPOINT:
+                memcpy((void *)&_vehicleConfig->orientationSetpoint, payload, 4);
+                break;
+            case SPEED_SETPOINT:
+                memcpy((void *)&_vehicleConfig->speedSetpoint, payload, 4);
+                break;
+            }
         }
 
         _requestHandled = 1;
@@ -148,6 +176,11 @@ void RWCComHandler::generateResponse(uint8_t *response, uint8_t *responseLen)
     memcpy(response, _responseBuffer, _responseLen);
     response[_responseLen] = crc >> 8;
     response[_responseLen + 1] = crc & 0xFF;
+}
+
+void RWCComHandler::_updateKeepalive()
+{
+    _vehicleConfig->lastKeepAlive = millis();
 }
 
 void i2cCommReceive(int len)
