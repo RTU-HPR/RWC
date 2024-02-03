@@ -13,15 +13,20 @@
 #define RWC_COMM_H
 
 #include "Arduino.h"
+#include "Wire.h"
 #include "stdlib.h"
 #include "vehicle.h"
 
 #define BUFFER_LEN 128
 
+void i2cCommReceive(int);
+void i2cCommRequest();
+
 class RWCComHandler
 {
 private:
-    uint8_t requestHandled;
+    uint8_t _requestHandled;
+    uint8_t _responseLengt;
     VehicleConfig *_vehicleConfig;
 
 public:

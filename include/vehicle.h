@@ -3,7 +3,8 @@
 
 #include "stdlib.h"
 
-struct VehicleConfig{
+struct VehicleConfig
+{
     uint8_t state;
     uint64_t lastKeepAlive;
     uint8_t mode;
@@ -17,7 +18,8 @@ struct VehicleConfig{
     float motorSpeed;
 };
 
-enum RWCRegisters{
+enum RWCRegisters
+{
     STATE,
     KEEP_ALIVE,
     ORIENTATION_MODE,
@@ -30,24 +32,43 @@ enum RWCRegisters{
     ERROR
 };
 
-enum RWCState{
+enum RWCRegistersSize
+{
+    STATE_SIZE = 1,
+    KEEP_ALIVE_SIZE = 1,
+    ORIENTATION_MODE_SIZE = 1,
+    ORIENTATION_SETPOINT_SIZE = 4,
+    SPEED_SETPOINT_SIZE = 4,
+    ORIENTATION_SIZE = 4,
+    ANG_SPEED_SIZE = 4,
+    MOTOR_SPEED_SIZE = 4,
+    NEW_DATA_SIZE = 1,
+    ERROR_SIZE = 1
+};
+
+
+enum RWCState
+{
     IDLE,
     STAB
 };
 
-enum RWCOrientationMode{
+enum RWCOrientationMode
+{
     ORIENTATION_HOLD,
     SPEED_HOLD
 };
 
-enum RWCNewData{
+enum RWCNewData
+{
     DATA_CLEAR,
     NEW_ORIENTATION = 1 << 0,
     NEW_ANG_SPEED = 1 << 1,
     NEW_MOTOR_SPEED = 1 << 2,
 };
 
-enum RWCErrors{
+enum RWCErrors
+{
     ERR_CLEAR,
     CRC_ERR = 1 << 0,
     MOTOR_RUNAWAY = 1 << 1,

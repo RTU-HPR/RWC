@@ -19,6 +19,14 @@
 #define TELEM_TICK_PERIOD 1000 / TELEM_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
 
+#define I2C_SLAVE_SCL_PIN 15
+#define I2C_SLAVE_SDA_PIN 16
+#define I2C_SLAVE_ADDR 0x01
+#define I2C_SLAVE_FREQ 100000
+
+#define BNO_SDA 48
+#define BNO_SCL 47
+
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
 PIDConfig orientationPidGains = {.p = 0.08, .i = 0.02, .d = 0.0002};
@@ -30,6 +38,7 @@ PID speedPid(speedGains, -250.0, 250.0);
 LowPassFIR filter(23);
 
 VehicleConfig rwc;
+RWCComHandler comm(&rwc);
 
 uint64_t motorTick, stabTick;
 
@@ -62,7 +71,11 @@ const PROGMEM float filterk[] = {
 void setup()
 {
 
-    Wire.setPins(48, 47);
+    Wire.setPins(BNO_SDA, BNO_SCL);
+
+    Wire1.onReceive(i2cCommReceive);
+    Wire1.onRequest(i2cCommRequest);
+    Wire1.begin((uint8_t)I2C_SLAVE_ADDR, I2C_SLAVE_SDA_PIN, I2C_SLAVE_SCL_PIN, I2C_SLAVE_FREQ);
 
     if (!bno.begin())
     {

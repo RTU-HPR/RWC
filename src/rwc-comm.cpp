@@ -11,6 +11,8 @@
 
 #include "rwc-comm.h"
 
+extern RWCComHandler comm;
+
 RWCComHandler::RWCComHandler(VehicleConfig *config) : _vehicleConfig(config)
 {
 }
@@ -21,9 +23,10 @@ RWCComHandler::~RWCComHandler()
 
 void RWCComHandler::handler()
 {
-    if (!requestHandled)
-    {
-        requestHandled = 1;
+    if (!_requestHandled)
+    {   
+        
+        _requestHandled = 1;
     }
 }
 
@@ -37,8 +40,26 @@ void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
 
     for (uint8_t i = 0; i < len; i++)
     {
-        requestBuffer[i] = requestBuffer[i];
+        requestBuffer[i] = request[i];
     }
 
-    requestHandled = 0;
+    _requestHandled = 0;
+}
+
+void i2cCommReceive(int len)
+{
+    uint8_t *buffer = new uint8_t[len];
+
+    for (uint16_t i = 0; i < len; i++)
+    {
+        buffer[i] = Wire1.read();
+    }
+
+    comm.newRequest(buffer, len);
+
+    delete[] buffer;
+}
+
+void i2cCommRequest()
+{
 }
