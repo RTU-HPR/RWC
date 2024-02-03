@@ -26,19 +26,19 @@ class RWCComHandler
 {
 private:
     uint8_t _requestHandled;
-    uint8_t _responseLengt;
+    uint8_t _responseLen;
+    uint8_t _requestLen;
+    uint8_t _requestBuffer[BUFFER_LEN];
+    uint8_t _responseBuffer[BUFFER_LEN];
     VehicleConfig *_vehicleConfig;
 
 public:
     RWCComHandler(VehicleConfig *config);
     ~RWCComHandler();
 
-    uint8_t requestLen;
-    uint8_t requestBuffer[BUFFER_LEN];
-    uint8_t responseBuffer[BUFFER_LEN];
-
     void handler();
     void newRequest(uint8_t *request, uint8_t len);
+    void generateResponse(uint8_t *responseBuffer, uint8_t *responseLen);
 };
 
 #endif

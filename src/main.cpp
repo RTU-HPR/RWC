@@ -76,7 +76,6 @@ void setup()
     Wire1.onReceive(i2cCommReceive);
     Wire1.onRequest(i2cCommRequest);
     Wire1.begin((uint8_t)I2C_SLAVE_ADDR, I2C_SLAVE_SDA_PIN, I2C_SLAVE_SCL_PIN, I2C_SLAVE_FREQ);
-
     if (!bno.begin())
     {
         while (1)
@@ -141,4 +140,6 @@ void loop()
         orientationPid.reset();
         speedPid.reset();
     }
+
+    comm.handler();
 }
