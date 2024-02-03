@@ -17,7 +17,11 @@
 #define MOTOR_TICK_PERIOD 1000000 / MOTOR_TICK_FREQ - 1
 #define TELEM_FREQ 40
 #define TELEM_TICK_PERIOD 1000 / TELEM_FREQ - 1
+#define COMM_UPDATE_FREQ 10
+#define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
+
+#define KEEP_ALIVE_DEAD 5000
 
 #define I2C_SLAVE_SCL_PIN 15
 #define I2C_SLAVE_SDA_PIN 16
@@ -40,7 +44,7 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick;
+uint64_t motorTick, stabTick, commTick;
 
 const PROGMEM float filterk[] = {
     0.009082479966205859,
@@ -91,12 +95,13 @@ void setup()
 void loop()
 {
 
-    if (rwc.state = STAB)
+    if (rwc.state = STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
             motorTick = micros();
             motor0.tick(micros());
+            rwc.motorSpeed = motor0.speed;
         }
 
         if (micros() - stabTick > BNO_TICK_PERIOD)
@@ -138,6 +143,13 @@ void loop()
         motor0.brake();
         orientationPid.reset();
         speedPid.reset();
+    }
+
+    if (millis() - commTick > COMM_UPDATE_PERIOD)
+    {
+        commTick = millis();
+
+        rwc.newData |= NEW_ORIENTATION | NEW_ANG_SPEED | NEW_MOTOR_SPEED;
     }
 
     comm.handler();
