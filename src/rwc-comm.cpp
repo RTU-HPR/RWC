@@ -1,9 +1,9 @@
 /**
  * @file RWC-slave.cpp
- * @author your name (you@domain.com)
- * @brief
+ * @author Marko
+ * @brief This file contains the implementation of the Reaction Wheel Controller communication handler class.
  * @version 0.1
- * @date 2024-01-31
+ * @date 2024-02-10
  *
  * @copyright Copyright (c) 2024
  *
@@ -11,21 +11,31 @@
 
 #include "rwc-comm.h"
 
-extern RWCComHandler comm;
+extern RWCComHandler comm; // External declaration of RWCComHandler object.
 
+/**
+ * @brief Constructs a new RWCComHandler object.
+ * 
+ * @param config Pointer to the vehicle configuration.
+ */
 RWCComHandler::RWCComHandler(VehicleConfig *config) : _vehicleConfig(config)
 {
 }
 
+/**
+ * @brief Destroys the RWCComHandler object.
+ */
 RWCComHandler::~RWCComHandler()
 {
 }
 
+/**
+ * @brief Handles the data received, prepares the data to be sent. All of the processing is done here (except CRC calculation).
+ */
 void RWCComHandler::handler()
 {
     if (!_requestHandled)
     {
-
         uint8_t opCode = _requestBuffer[0];
         uint8_t dataSize;
 
@@ -116,7 +126,7 @@ void RWCComHandler::handler()
             }
         }
         else
-        { // if request is more then 3 bytes long -> write request
+        { // if request is more than 3 bytes long -> write request
             if (!Checksum_CCITT_16::verify(_requestBuffer, 1 + dataSize + 2))
             {
                 _vehicleConfig->error |= CRC_ERR;
@@ -151,6 +161,12 @@ void RWCComHandler::handler()
     }
 }
 
+/**
+ * @brief Handles a new request.
+ * 
+ * @param request Pointer to the request data.
+ * @param len Length of the request.
+ */
 void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
 {
 
@@ -169,6 +185,12 @@ void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
     _requestHandled = 0;
 }
 
+/**
+ * @brief Generates a response.
+ * 
+ * @param response Pointer to the response data.
+ * @param responseLen Pointer to the length of the response.
+ */
 void RWCComHandler::generateResponse(uint8_t *response, uint8_t *responseLen)
 {
     *responseLen = _responseLen + 2;
@@ -178,11 +200,19 @@ void RWCComHandler::generateResponse(uint8_t *response, uint8_t *responseLen)
     response[_responseLen + 1] = crc & 0xFF;
 }
 
+/**
+ * @brief Updates the keep-alive watchdog.
+ */
 void RWCComHandler::_updateKeepalive()
 {
     _vehicleConfig->lastKeepAlive = millis();
 }
 
+/**
+ * @brief Handles the I2C communication reception.
+ * 
+ * @param len Number of bytes received.
+ */
 void i2cCommReceive(int len)
 {
     uint8_t *buffer = new uint8_t[len];
@@ -197,6 +227,9 @@ void i2cCommReceive(int len)
     delete[] buffer;
 }
 
+/**
+ * @brief Handles the I2C communication request.
+ */
 void i2cCommRequest()
 {
     uint8_t buffer[128];
