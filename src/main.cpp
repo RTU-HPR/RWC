@@ -34,11 +34,10 @@
 #define SPEED_PID_MAXIMUM_OUTPUT 250.0f
 #define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
 #define MOTOR_RUNAWAY_TIME 30 * 1000
-#define POSITION_PID_DEADBAND 1.0f
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
-PIDConfig orientationPidGains = {.p = 0.08, .i = 0.02, .d = 0.0002};
+PIDConfig orientationPidGains = {.p = 0.08, .i = 0.01, .d = 0.0002};
 PIDConfig speedGains = {.p = 15, .i = 1, .d = 0.1};
 
 PID orientationPid(orientationPidGains, -250.0, 250.0);
@@ -98,12 +97,13 @@ void setup()
     filter.setCoefficients((float *)filterk);
 
     rwc.state = STAB;
+    rwc.mode = ORIENTATION_HOLD;
 }
 
 void loop()
 {
 
-    if (rwc.state = STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
+    if (rwc.state == STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
@@ -139,7 +139,6 @@ void loop()
                 rwc.orientation = 360.0f - ((rwc.orientation < 0.0f) ? rwc.orientation + 360.0f : rwc.orientation);
                 float error = rwc.orientation - rwc.orientationSetpoint;
                 error = !(error > 180 || error < -180) ? error : (error > 180 ? error - 360 : error + 360);
-                error = (abs(error) < POSITION_PID_DEADBAND) ? 0 : error;
                 speedPid.setpoint = orientationPid.tick(-error, micros());
             }
 
@@ -174,6 +173,7 @@ void loop()
         rwc.state = IDLE;
         rwc.error |= MOTOR_RUNAWAY;
 
+        motor0.setPower(0, 0);
         motor0.disable();
         orientationPid.reset();
         speedPid.reset();
