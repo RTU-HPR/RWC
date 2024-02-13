@@ -2,6 +2,7 @@
 #define PLATFORM_H
 
 #include "stdlib.h"
+#include "motor.h"
 
 struct VehicleConfig
 {
@@ -10,6 +11,8 @@ struct VehicleConfig
     uint8_t mode;
     uint8_t newData;
     uint8_t error;
+
+    Motor *motor;
 
     float orientationSetpoint;
     float speedSetpoint;
