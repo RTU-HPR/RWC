@@ -31,6 +31,10 @@
 #define BNO_SDA 48
 #define BNO_SCL 47
 
+#define SPEED_PID_MAXIMUM_OUTPUT 250.0f
+#define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
+#define MOTOR_RUNAWAY_TIME 30 * 1000
+
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
 PIDConfig orientationPidGains = {.p = 0.08, .i = 0.02, .d = 0.0002};
@@ -44,7 +48,8 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick;
+int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
     0.009082479966205859,
@@ -143,6 +148,26 @@ void loop()
         motor0.brake();
         orientationPid.reset();
         speedPid.reset();
+    }
+
+    if(motor0.pid.setpoint == SPEED_PID_MAXIMUM_OUTPUT || motor0.pid.setpoint == SPEED_PID_MINIMUM_OUTPUT){
+        motorMaxSpeedTime += millis() - motorRunawayDetectionTick;
+        motorRunawayDetectionTick = millis();
+    }
+    else{
+        motorMaxSpeedTime -= millis() - motorRunawayDetectionTick;
+        motorRunawayDetectionTick = millis();
+    }
+
+    if(motorMaxSpeedTime >= MOTOR_RUNAWAY_TIME){
+        rwc.state = IDLE;
+        rwc.error |= MOTOR_RUNAWAY;
+
+        motor0.disable();
+        orientationPid.reset();
+        speedPid.reset();
+
+        motorMaxSpeedTime = 0;
     }
 
     if (millis() - commTick > COMM_UPDATE_PERIOD)
