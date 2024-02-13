@@ -21,7 +21,7 @@
 #define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
 
-#define KEEP_ALIVE_DEAD 5000
+#define KEEP_ALIVE_DEAD 5 * 1000
 
 #define I2C_SLAVE_SCL_PIN 15
 #define I2C_SLAVE_SDA_PIN 16
@@ -34,6 +34,7 @@
 #define SPEED_PID_MAXIMUM_OUTPUT 250.0f
 #define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
 #define MOTOR_RUNAWAY_TIME 30 * 1000
+#define POSITION_PID_DEADBAND 1.0f
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -95,6 +96,8 @@ void setup()
     motor0.enable();
 
     filter.setCoefficients((float *)filterk);
+
+    rwc.state = STAB;
 }
 
 void loop()
@@ -136,6 +139,7 @@ void loop()
                 rwc.orientation = 360.0f - ((rwc.orientation < 0.0f) ? rwc.orientation + 360.0f : rwc.orientation);
                 float error = rwc.orientation - rwc.orientationSetpoint;
                 error = !(error > 180 || error < -180) ? error : (error > 180 ? error - 360 : error + 360);
+                error = (abs(error) < POSITION_PID_DEADBAND) ? 0 : error;
                 speedPid.setpoint = orientationPid.tick(-error, micros());
             }
 
@@ -150,16 +154,23 @@ void loop()
         speedPid.reset();
     }
 
-    if(motor0.pid.setpoint == SPEED_PID_MAXIMUM_OUTPUT || motor0.pid.setpoint == SPEED_PID_MINIMUM_OUTPUT){
+    if ((motor0.pid.setpoint == SPEED_PID_MAXIMUM_OUTPUT || motor0.pid.setpoint == SPEED_PID_MINIMUM_OUTPUT) && rwc.state == STAB)
+    {
         motorMaxSpeedTime += millis() - motorRunawayDetectionTick;
         motorRunawayDetectionTick = millis();
     }
-    else{
+    else if (rwc.state == STAB)
+    {
         motorMaxSpeedTime -= millis() - motorRunawayDetectionTick;
+        if (motorMaxSpeedTime < 0)
+        {
+            motorMaxSpeedTime = 0;
+        }
         motorRunawayDetectionTick = millis();
     }
 
-    if(motorMaxSpeedTime >= MOTOR_RUNAWAY_TIME){
+    if (motorMaxSpeedTime >= MOTOR_RUNAWAY_TIME)
+    {
         rwc.state = IDLE;
         rwc.error |= MOTOR_RUNAWAY;
 
