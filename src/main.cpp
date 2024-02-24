@@ -20,6 +20,8 @@
 #define COMM_UPDATE_FREQ 10
 #define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
+#define MOTOR_TEMP_CHCK_FREQ 10
+#define MOTOR_TEMP_CHCK_PERIOD 1000 / MOTOR_TEMP_CHCK_FREQ - 1
 
 #define KEEP_ALIVE_DEAD 5 * 1000
 
@@ -54,7 +56,7 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick, motorTempTick;
 int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
@@ -229,5 +231,11 @@ void loop()
         }
     }
 
+    if (millis() - motorTempTick > MOTOR_TEMP_CHCK_PERIOD)
+    {
+        // Update temperature here
+        motorTempTick = millis();
+    }
+
     comm.handler();
-}
+}   

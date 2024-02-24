@@ -15,7 +15,7 @@ extern RWCComHandler comm; // External declaration of RWCComHandler object.
 
 /**
  * @brief Constructs a new RWCComHandler object.
- * 
+ *
  * @param config Pointer to the vehicle configuration.
  */
 RWCComHandler::RWCComHandler(VehicleConfig *config) : _vehicleConfig(config)
@@ -79,6 +79,9 @@ void RWCComHandler::handler()
         case CALIBRATION_STATUS:
             dataSize = CALIBRATION_STATUS_SIZE;
             break;
+        case MOTOR_TEMP:
+            dataSize = MOTOR_TEMP_SIZE;
+            break;
         }
 
         if (_requestLen == 3)
@@ -129,6 +132,9 @@ void RWCComHandler::handler()
             case CALIBRATION_STATUS:
                 _responseBuffer[0] = _vehicleConfig->calibration;
                 break;
+            case MOTOR_TEMP:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->motorTemp, 4);
+                break;
             }
         }
         else
@@ -170,7 +176,7 @@ void RWCComHandler::handler()
 
 /**
  * @brief Handles a new request.
- * 
+ *
  * @param request Pointer to the request data.
  * @param len Length of the request.
  */
@@ -194,7 +200,7 @@ void RWCComHandler::newRequest(uint8_t *request, uint8_t len)
 
 /**
  * @brief Generates a response.
- * 
+ *
  * @param response Pointer to the response data.
  * @param responseLen Pointer to the length of the response.
  */
@@ -217,7 +223,7 @@ void RWCComHandler::_updateKeepalive()
 
 /**
  * @brief Handles the I2C communication reception.
- * 
+ *
  * @param len Number of bytes received.
  */
 void i2cCommReceive(int len)
