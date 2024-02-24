@@ -102,7 +102,7 @@ void setup()
 
     filter.setCoefficients((float *)filterk);
 
-    rwc.state = STAB;
+    rwc.state = IDLE;
     rwc.mode = ORIENTATION_HOLD;
 
     pinMode(WHITE_LED, OUTPUT);
@@ -113,7 +113,7 @@ void setup()
 void loop()
 {
 
-    if (rwc.state == STAB)
+    if (rwc.state == STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
@@ -203,6 +203,12 @@ void loop()
         calibrationTick = millis();
         uint8_t calibration[4];
         bno.getCalibration(&calibration[0], &calibration[1], &calibration[2], &calibration[3]);
+
+        rwc.calibration = 0;
+        rwc.calibration |= calibration[0];
+        rwc.calibration |= calibration[1] & (11 << 2);
+        rwc.calibration |= calibration[2] & (11 << 4);
+        rwc.calibration |= calibration[3] & (11 << 6);
 
         if (calibration[1] == 3)
         {
