@@ -22,6 +22,8 @@
 #define PID_SWITCH_TRESHOLD 12.0f
 #define MOTOR_TEMP_CHCK_FREQ 10
 #define MOTOR_TEMP_CHCK_PERIOD 1000 / MOTOR_TEMP_CHCK_FREQ - 1
+#define BATTERY_VOLTAGE_CHCK_FREQ 10
+#define BATTERY_VOLTAGE_CHCK_PERIOD 1000 / BATTERY_VOLTAGE_CHCK_FREQ - 1
 
 #define KEEP_ALIVE_DEAD 5 * 1000
 
@@ -42,6 +44,11 @@
 #define WHITE_LED 5
 #define GREEN_LED 6
 #define RED_LED 7
+#define BATTERY_VOLTAGE_PIN 14
+
+#define BATTERY_VOLTAGE_R1 47600.0f
+#define BATTERY_VOLTAGE_R2 8640.0f
+#define BATTERY_VOLTAGE_DIV_K (BATTERY_VOLTAGE_R2 / (BATTERY_VOLTAGE_R1 + BATTERY_VOLTAGE_R2))
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -56,7 +63,9 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick, motorTempTick;
+uint64_t motorTick, stabTick, commTick,
+    motorRunawayDetectionTick, calibrationTick, motorTempTick,
+    batteryTick;
 int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
@@ -110,6 +119,8 @@ void setup()
     pinMode(WHITE_LED, OUTPUT);
     pinMode(GREEN_LED, OUTPUT);
     pinMode(RED_LED, OUTPUT);
+
+    Serial.begin(115200);
 }
 
 void loop()
@@ -233,8 +244,17 @@ void loop()
 
     if (millis() - motorTempTick > MOTOR_TEMP_CHCK_PERIOD)
     {
-        //Update temperature here
+        // Update temperature here
     }
 
-    comm.handler();
-}   
+    if (millis() - batteryTick > BATTERY_VOLTAGE_CHCK_PERIOD){
+        batteryTick = millis();
+        uint32_t totalMv = 0;
+        for(uint8_t i = 0; i < 20; i++){ // Do several measurments to filter out the noise.
+            totalMv += analogRead(BATTERY_VOLTAGE_PIN);
+        }
+        rwc.batteryVoltage = (((float)totalMv / (20.0f * 4095)) * 3.3) / BATTERY_VOLTAGE_DIV_K;
+    }
+
+        comm.handler();
+}
