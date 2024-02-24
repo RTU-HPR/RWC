@@ -141,6 +141,7 @@ void RWCComHandler::handler()
             {
             case STATE:
                 _vehicleConfig->state = payload[0];
+                _vehicleConfig->motor->enable();
                 break;
             case KEEP_ALIVE:
                 _updateKeepalive();

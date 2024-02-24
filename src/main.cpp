@@ -21,7 +21,7 @@
 #define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
 
-#define KEEP_ALIVE_DEAD 5000
+#define KEEP_ALIVE_DEAD 5 * 1000
 
 #define I2C_SLAVE_SCL_PIN 15
 #define I2C_SLAVE_SDA_PIN 16
@@ -31,9 +31,13 @@
 #define BNO_SDA 48
 #define BNO_SCL 47
 
+#define SPEED_PID_MAXIMUM_OUTPUT 250.0f
+#define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
+#define MOTOR_RUNAWAY_TIME 30 * 1000
+
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
-PIDConfig orientationPidGains = {.p = 0.08, .i = 0.02, .d = 0.0002};
+PIDConfig orientationPidGains = {.p = 0.08, .i = 0.01, .d = 0.0002};
 PIDConfig speedGains = {.p = 15, .i = 1, .d = 0.1};
 
 PID orientationPid(orientationPidGains, -250.0, 250.0);
@@ -44,7 +48,8 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick;
+int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
     0.009082479966205859,
@@ -90,12 +95,15 @@ void setup()
     motor0.enable();
 
     filter.setCoefficients((float *)filterk);
+
+    rwc.state = STAB;
+    rwc.mode = ORIENTATION_HOLD;
 }
 
 void loop()
 {
 
-    if (rwc.state = STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
+    if (rwc.state == STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
@@ -143,6 +151,34 @@ void loop()
         motor0.brake();
         orientationPid.reset();
         speedPid.reset();
+    }
+
+    if ((motor0.pid.setpoint == SPEED_PID_MAXIMUM_OUTPUT || motor0.pid.setpoint == SPEED_PID_MINIMUM_OUTPUT) && rwc.state == STAB)
+    {
+        motorMaxSpeedTime += millis() - motorRunawayDetectionTick;
+        motorRunawayDetectionTick = millis();
+    }
+    else if (rwc.state == STAB)
+    {
+        motorMaxSpeedTime -= millis() - motorRunawayDetectionTick;
+        if (motorMaxSpeedTime < 0)
+        {
+            motorMaxSpeedTime = 0;
+        }
+        motorRunawayDetectionTick = millis();
+    }
+
+    if (motorMaxSpeedTime >= MOTOR_RUNAWAY_TIME)
+    {
+        rwc.state = IDLE;
+        rwc.error |= MOTOR_RUNAWAY;
+
+        motor0.setPower(0, 0);
+        motor0.disable();
+        orientationPid.reset();
+        speedPid.reset();
+
+        motorMaxSpeedTime = 0;
     }
 
     if (millis() - commTick > COMM_UPDATE_PERIOD)
