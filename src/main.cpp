@@ -34,6 +34,12 @@
 #define SPEED_PID_MAXIMUM_OUTPUT 250.0f
 #define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
 #define MOTOR_RUNAWAY_TIME 30 * 1000
+#define BNO_CALIBRATION_CHCK_FREQ 10
+#define BNO_CALIBRATION_CHCK_PERIOD 1000 / BNO_CALIBRATION_CHCK_FREQ - 1
+
+#define WHITE_LED 5
+#define GREEN_LED 6
+#define RED_LED 7
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -48,7 +54,7 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick;
 int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
@@ -98,12 +104,16 @@ void setup()
 
     rwc.state = STAB;
     rwc.mode = ORIENTATION_HOLD;
+
+    pinMode(WHITE_LED, OUTPUT);
+    pinMode(GREEN_LED, OUTPUT);
+    pinMode(RED_LED, OUTPUT);
 }
 
 void loop()
 {
 
-    if (rwc.state == STAB && millis() - rwc.lastKeepAlive < KEEP_ALIVE_DEAD)
+    if (rwc.state == STAB)
     {
         if (micros() - motorTick > MOTOR_TICK_PERIOD)
         {
@@ -186,6 +196,31 @@ void loop()
         commTick = millis();
 
         rwc.newData |= NEW_ORIENTATION | NEW_ANG_SPEED | NEW_MOTOR_SPEED;
+    }
+
+    if (millis() - calibrationTick > BNO_CALIBRATION_CHCK_PERIOD)
+    {
+        calibrationTick = millis();
+        uint8_t calibration[4];
+        bno.getCalibration(&calibration[0], &calibration[1], &calibration[2], &calibration[3]);
+
+        if (calibration[1] == 3)
+        {
+            digitalWrite(GREEN_LED, 1);
+        }
+        else
+        {
+            digitalWrite(GREEN_LED, 0);
+        }
+
+        if (calibration[3] == 3)
+        {
+            digitalWrite(RED_LED, 1);
+        }
+        else
+        {
+            digitalWrite(RED_LED, 0);
+        }
     }
 
     comm.handler();
