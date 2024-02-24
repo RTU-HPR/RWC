@@ -76,6 +76,9 @@ void RWCComHandler::handler()
         case ERROR:
             dataSize = ERROR_SIZE;
             break;
+        case CALIBRATION_STATUS:
+            dataSize = CALIBRATION_STATUS_SIZE;
+            break;
         }
 
         if (_requestLen == 3)
@@ -122,6 +125,9 @@ void RWCComHandler::handler()
             case ERROR:
                 _responseBuffer[0] = _vehicleConfig->error;
                 _vehicleConfig->error = 0;
+                break;
+            case CALIBRATION_STATUS:
+                _responseBuffer[0] = _vehicleConfig->calibration;
                 break;
             }
         }
