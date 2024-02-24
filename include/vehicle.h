@@ -20,6 +20,7 @@ struct VehicleConfig
     float orientation;
     float angSpeed;
     float motorSpeed;
+    float motorTemp;
 };
 
 enum RWCRegisters
@@ -35,6 +36,7 @@ enum RWCRegisters
     NEW_DATA,
     ERROR,
     CALIBRATION_STATUS,
+    MOTOR_TEMP, 
 };
 
 enum RWCRegistersSize
@@ -49,7 +51,8 @@ enum RWCRegistersSize
     MOTOR_SPEED_SIZE = 4,
     NEW_DATA_SIZE = 1,
     ERROR_SIZE = 1,
-    CALIBRATION_STATUS_SIZE = 1;
+    CALIBRATION_STATUS_SIZE = 1,
+    MOTOR_TEMP_SIZE = 4,
 };
 
 

@@ -79,6 +79,9 @@ void RWCComHandler::handler()
         case CALIBRATION_STATUS:
             dataSize = CALIBRATION_STATUS_SIZE;
             break;
+        case MOTOR_TEMP:
+            dataSize = MOTOR_TEMP_SIZE;
+            break;
         }
 
         if (_requestLen == 3)
@@ -129,6 +132,8 @@ void RWCComHandler::handler()
             case CALIBRATION_STATUS:
                 _responseBuffer[0] = _vehicleConfig->calibration;
                 break;
+            case MOTOR_TEMP:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->motorTemp, 4);
             }
         }
         else
