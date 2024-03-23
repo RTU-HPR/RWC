@@ -22,8 +22,6 @@
 #define PID_SWITCH_TRESHOLD 12.0f
 #define MOTOR_TEMP_CHCK_FREQ 10
 #define MOTOR_TEMP_CHCK_PERIOD 1000 / MOTOR_TEMP_CHCK_FREQ - 1
-#define BATTERY_VOLTAGE_CHCK_FREQ 10
-#define BATTERY_VOLTAGE_CHCK_PERIOD 1000 / BATTERY_VOLTAGE_CHCK_FREQ - 1
 
 #define KEEP_ALIVE_DEAD 5 * 1000
 
@@ -38,6 +36,12 @@
 #define SPEED_PID_MAXIMUM_OUTPUT 250.0f
 #define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
 #define MOTOR_RUNAWAY_TIME 30 * 1000
+#define BNO_CALIBRATION_CHCK_FREQ 10
+#define BNO_CALIBRATION_CHCK_PERIOD 1000 / BNO_CALIBRATION_CHCK_FREQ - 1
+
+#define WHITE_LED 5
+#define GREEN_LED 6
+#define RED_LED 7
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -52,7 +56,7 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick, motorTempTick;
 int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
@@ -100,8 +104,12 @@ void setup()
 
     filter.setCoefficients((float *)filterk);
 
-    rwc.state = STAB;
+    rwc.state = IDLE;
     rwc.mode = ORIENTATION_HOLD;
+
+    pinMode(WHITE_LED, OUTPUT);
+    pinMode(GREEN_LED, OUTPUT);
+    pinMode(RED_LED, OUTPUT);
 }
 
 void loop()
@@ -192,5 +200,42 @@ void loop()
         rwc.newData |= NEW_ORIENTATION | NEW_ANG_SPEED | NEW_MOTOR_SPEED;
     }
 
+    if (millis() - calibrationTick > BNO_CALIBRATION_CHCK_PERIOD)
+    {
+        calibrationTick = millis();
+        uint8_t calibration[4];
+        bno.getCalibration(&calibration[0], &calibration[1], &calibration[2], &calibration[3]);
+
+        rwc.calibration = 0;
+        rwc.calibration |= calibration[0];
+        rwc.calibration |= calibration[1] & (11 << 2);
+        rwc.calibration |= calibration[2] & (11 << 4);
+        rwc.calibration |= calibration[3] & (11 << 6);
+
+        if (calibration[1] == 3)
+        {
+            digitalWrite(GREEN_LED, 1);
+        }
+        else
+        {
+            digitalWrite(GREEN_LED, 0);
+        }
+
+        if (calibration[3] == 3)
+        {
+            digitalWrite(RED_LED, 1);
+        }
+        else
+        {
+            digitalWrite(RED_LED, 0);
+        }
+    }
+
+    if (millis() - motorTempTick > MOTOR_TEMP_CHCK_PERIOD)
+    {
+        // Update temperature here
+        motorTempTick = millis();
+    }
+
     comm.handler();
-}
+}   
