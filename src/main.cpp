@@ -38,17 +38,6 @@
 #define SPEED_PID_MAXIMUM_OUTPUT 250.0f
 #define SPEED_PID_MINIMUM_OUTPUT -SPEED_PID_MAXIMUM_OUTPUT
 #define MOTOR_RUNAWAY_TIME 30 * 1000
-#define BNO_CALIBRATION_CHCK_FREQ 10
-#define BNO_CALIBRATION_CHCK_PERIOD 1000 / BNO_CALIBRATION_CHCK_FREQ - 1
-
-#define WHITE_LED 5
-#define GREEN_LED 6
-#define RED_LED 7
-#define BATTERY_VOLTAGE_PIN 14
-
-#define BATTERY_VOLTAGE_R1 47600.0f
-#define BATTERY_VOLTAGE_R2 8640.0f
-#define BATTERY_VOLTAGE_DIV_K (BATTERY_VOLTAGE_R2 / (BATTERY_VOLTAGE_R1 + BATTERY_VOLTAGE_R2))
 
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29, &Wire);
 
@@ -63,9 +52,7 @@ LowPassFIR filter(23);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick,
-    motorRunawayDetectionTick, calibrationTick, motorTempTick,
-    batteryTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick;
 int32_t motorMaxSpeedTime;
 
 const PROGMEM float filterk[] = {
@@ -113,14 +100,8 @@ void setup()
 
     filter.setCoefficients((float *)filterk);
 
-    rwc.state = IDLE;
+    rwc.state = STAB;
     rwc.mode = ORIENTATION_HOLD;
-
-    pinMode(WHITE_LED, OUTPUT);
-    pinMode(GREEN_LED, OUTPUT);
-    pinMode(RED_LED, OUTPUT);
-
-    Serial.begin(115200);
 }
 
 void loop()
@@ -211,50 +192,5 @@ void loop()
         rwc.newData |= NEW_ORIENTATION | NEW_ANG_SPEED | NEW_MOTOR_SPEED;
     }
 
-    if (millis() - calibrationTick > BNO_CALIBRATION_CHCK_PERIOD)
-    {
-        calibrationTick = millis();
-        uint8_t calibration[4];
-        bno.getCalibration(&calibration[0], &calibration[1], &calibration[2], &calibration[3]);
-
-        rwc.calibration = 0;
-        rwc.calibration |= calibration[0];
-        rwc.calibration |= calibration[1] & (11 << 2);
-        rwc.calibration |= calibration[2] & (11 << 4);
-        rwc.calibration |= calibration[3] & (11 << 6);
-
-        if (calibration[1] == 3)
-        {
-            digitalWrite(GREEN_LED, 1);
-        }
-        else
-        {
-            digitalWrite(GREEN_LED, 0);
-        }
-
-        if (calibration[3] == 3)
-        {
-            digitalWrite(RED_LED, 1);
-        }
-        else
-        {
-            digitalWrite(RED_LED, 0);
-        }
-    }
-
-    if (millis() - motorTempTick > MOTOR_TEMP_CHCK_PERIOD)
-    {
-        // Update temperature here
-    }
-
-    if (millis() - batteryTick > BATTERY_VOLTAGE_CHCK_PERIOD){
-        batteryTick = millis();
-        uint32_t totalMv = 0;
-        for(uint8_t i = 0; i < 20; i++){ // Do several measurments to filter out the noise.
-            totalMv += analogRead(BATTERY_VOLTAGE_PIN);
-        }
-        rwc.batteryVoltage = (((float)totalMv / (20.0f * 4095)) * 3.3) / BATTERY_VOLTAGE_DIV_K;
-    }
-
-        comm.handler();
+    comm.handler();
 }

@@ -11,7 +11,6 @@ struct VehicleConfig
     uint8_t mode;
     uint8_t newData;
     uint8_t error;
-    uint8_t calibration;
 
     Motor *motor;
 
@@ -35,10 +34,7 @@ enum RWCRegisters
     ANG_SPEED,
     MOTOR_SPEED,
     NEW_DATA,
-    ERROR,
-    CALIBRATION_STATUS,
-    MOTOR_TEMP,
-    BATTERY_VOLTAGE,
+    ERROR
 };
 
 enum RWCRegistersSize
@@ -52,10 +48,7 @@ enum RWCRegistersSize
     ANG_SPEED_SIZE = 4,
     MOTOR_SPEED_SIZE = 4,
     NEW_DATA_SIZE = 1,
-    ERROR_SIZE = 1,
-    CALIBRATION_STATUS_SIZE = 1,
-    MOTOR_TEMP_SIZE = 4,
-    BATTERY_VOLTAGE_SIZE = 4,
+    ERROR_SIZE = 1
 };
 
 
