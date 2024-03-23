@@ -79,12 +79,9 @@ void RWCComHandler::handler()
         case CALIBRATION_STATUS:
             dataSize = CALIBRATION_STATUS_SIZE;
             break;
-<<<<<<< HEAD
-=======
         case MOTOR_TEMP:
             dataSize = MOTOR_TEMP_SIZE;
             break;
->>>>>>> battery
         }
 
         if (_requestLen == 3)
