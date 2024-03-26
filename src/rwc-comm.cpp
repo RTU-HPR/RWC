@@ -82,6 +82,9 @@ void RWCComHandler::handler()
         case MOTOR_TEMP:
             dataSize = MOTOR_TEMP_SIZE;
             break;
+        case BATTERY_VOLTAGE:
+            dataSize = BATTERY_VOLTAGE_SIZE;
+            break;
         }
 
         if (_requestLen == 3)
@@ -134,6 +137,9 @@ void RWCComHandler::handler()
                 break;
             case MOTOR_TEMP:
                 memcpy(_responseBuffer, (const void *)&_vehicleConfig->motorTemp, 4);
+                break;
+            case BATTERY_VOLTAGE:
+                memcpy(_responseBuffer, (const void *)&_vehicleConfig->batteryVoltage, 4);
                 break;
             }
         }
