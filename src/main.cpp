@@ -208,9 +208,9 @@ void loop()
 
         rwc.calibration = 0;
         rwc.calibration |= calibration[0];
-        rwc.calibration |= calibration[1] & (11 << 2);
-        rwc.calibration |= calibration[2] & (11 << 4);
-        rwc.calibration |= calibration[3] & (11 << 6);
+        rwc.calibration |= calibration[1]  << 2;
+        rwc.calibration |= calibration[2]  << 4;
+        rwc.calibration |= calibration[3]  << 6;
 
         if (calibration[1] == 3)
         {
