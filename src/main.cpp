@@ -207,11 +207,12 @@ void loop()
     {
         batteryTick = millis();
         uint32_t totalMv = 0;
-        for (uint8_t i = 0; i < 20; i++)
+        for (uint8_t i = 0; i < ADC_OVERSAMPLE; i++)
         { // Do several measurments to filter out the noise.
             totalMv += analogRead(BATTERY_VOLTAGE_PIN);
         }
-        rwc.batteryVoltage = (((float)totalMv / (20.0f * 4095)) * 3.3) / BATTERY_VOLTAGE_DIV_K;
+        float adcVoltage = ((float)totalMv / (float)ADC_OVERSAMPLE) * ADC_12BIT_CONV;
+        rwc.batteryVoltage = ADC_REAL(adcVoltage) / BATTERY_VOLTAGE_DIV_K;
     }
 
     comm.handler();

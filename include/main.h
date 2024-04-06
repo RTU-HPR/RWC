@@ -58,8 +58,23 @@
 #define BATTERY_VOLTAGE_PIN 14
 #define DS18B20_PIN 2
 
-#define BATTERY_VOLTAGE_R1 47600.0f
-#define BATTERY_VOLTAGE_R2 8640.0f
+#define BATTERY_VOLTAGE_R1 47000.0f
+#define BATTERY_VOLTAGE_R2 8500.0f
 #define BATTERY_VOLTAGE_DIV_K (BATTERY_VOLTAGE_R2 / (BATTERY_VOLTAGE_R1 + BATTERY_VOLTAGE_R2))
+
+
+//Section Below Fixes ESP32 ADC non-linearity
+#define ADC_FIX_K1 0.0115f
+#define ADC_FIX_K2 -0.0663f
+#define ADC_FIX_K3 0.1264f
+#define ADC_FIX_K4 -0.0671f
+#define ADC_FIX_K5 -0.0581f
+#define ADC_FIX_K6 -0.0026f
+
+#define ADC_REAL(x) (x - ADC_ERR(x))
+#define ADC_ERR(x) (ADC_FIX_K1 * x * x * x * x * x + ADC_FIX_K2 * x * x * x * x + ADC_FIX_K3 * x * x * x + ADC_FIX_K4 * x * x + ADC_FIX_K5 * x + ADC_FIX_K6)
+
+#define ADC_OVERSAMPLE 20
+#define ADC_12BIT_CONV 3.3f / 4096.0f
 
 #endif // MAIN_H
