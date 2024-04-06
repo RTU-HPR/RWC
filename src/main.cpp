@@ -4,6 +4,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #include "filter.h"
 #include "motor.h"
@@ -20,8 +22,14 @@
 #define COMM_UPDATE_FREQ 10
 #define COMM_UPDATE_PERIOD 1000 / COMM_UPDATE_FREQ - 1
 #define PID_SWITCH_TRESHOLD 12.0f
-#define MOTOR_TEMP_CHCK_FREQ 10
-#define MOTOR_TEMP_CHCK_PERIOD 1000 / MOTOR_TEMP_CHCK_FREQ - 1
+
+#define MOTOR_TEMP_CHCK_FREQ 500                                  // Value in mHz
+#define MOTOR_TEMP_CHCK_PERIOD 1000000 / MOTOR_TEMP_CHCK_FREQ - 1 // NOTE: DS18B20 takes 750ms to read the temperature, if the period is less
+                                                                    // temperature readings will block the loop. DON'T set the frequency > 1.33 Hz
+#if MOTOR_TEMP_CHCK_PERIOD < 750
+    #error "MOTOR_TEMP_CHCK_PERIOD must be greater than 750ms!"
+#endif
+
 #define BATTERY_VOLTAGE_CHCK_FREQ 10
 #define BATTERY_VOLTAGE_CHCK_PERIOD 1000 / BATTERY_VOLTAGE_CHCK_FREQ - 1
 
@@ -45,6 +53,7 @@
 #define GREEN_LED 6
 #define RED_LED 7
 #define BATTERY_VOLTAGE_PIN 14
+#define DS18B20_PIN 2
 
 #define BATTERY_VOLTAGE_R1 47600.0f
 #define BATTERY_VOLTAGE_R2 8640.0f
@@ -59,6 +68,9 @@ PID orientationPid(orientationPidGains, -250.0, 250.0);
 PID speedPid(speedGains, -250.0, 250.0);
 
 LowPassFIR filter(23);
+
+OneWire oneWire(DS18B20_PIN);
+DallasTemperature motorTemp(&oneWire);
 
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
@@ -110,6 +122,11 @@ void setup()
     motor0.enable();
 
     filter.setCoefficients((float *)filterk);
+
+    motorTemp.begin();
+    motorTemp.setWaitForConversion(false);
+    motorTemp.setResolution(12);
+    motorTemp.requestTemperatures();
 
     rwc.state = IDLE;
     rwc.mode = ORIENTATION_HOLD;
@@ -240,7 +257,8 @@ void loop()
 
     if (millis() - motorTempTick > MOTOR_TEMP_CHCK_PERIOD)
     {
-        // Update temperature here
+        rwc.motorTemp = motorTemp.getTempCByIndex(0);
+        motorTemp.requestTemperatures();
         motorTempTick = millis();
     }
 
