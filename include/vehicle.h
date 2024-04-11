@@ -1,9 +1,20 @@
+/***
+ * @file vehicle.h
+ * @brief Vehicle configuration structure and definitions.
+ * @version 1.0
+ * @date 2024-04-11
+ * @author Marko
+*/
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
 #include "stdlib.h"
 #include "motor.h"
 
+/**
+ * @brief Vehicle configuration structure.
+ * 
+ */
 struct VehicleConfig
 {
     uint8_t state;
@@ -24,6 +35,10 @@ struct VehicleConfig
     float batteryVoltage;
 };
 
+/**
+ * @brief Vehicle I2C registers. Check main document fore more.
+ * 
+ */
 enum RWCRegisters
 {
     STATE,
@@ -40,6 +55,11 @@ enum RWCRegisters
     MOTOR_TEMP,
     BATTERY_VOLTAGE,
 };
+
+/**
+ * @brief Vehicle I2C registers size. Check main document for more.
+ * 
+ */
 
 enum RWCRegistersSize
 {
@@ -58,6 +78,10 @@ enum RWCRegistersSize
     BATTERY_VOLTAGE_SIZE = 4,
 };
 
+/**
+ * @brief Vehicle state.
+ * 
+ */
 
 enum RWCState
 {
@@ -65,11 +89,21 @@ enum RWCState
     STAB
 };
 
+/**
+ * @brief Vehicle orientation mode.
+ * 
+ */
+
 enum RWCOrientationMode
 {
     ORIENTATION_HOLD,
     SPEED_HOLD
 };
+
+/**
+ * @brief Vehicle telemetry new data flags.
+ * 
+ */
 
 enum RWCNewData
 {
@@ -78,6 +112,11 @@ enum RWCNewData
     NEW_ANG_SPEED = 1 << 1,
     NEW_MOTOR_SPEED = 1 << 2,
 };
+
+/**
+ * @brief Vehicle telemetry errors.
+ * 
+ */
 
 enum RWCErrors
 {
