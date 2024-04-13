@@ -16,7 +16,7 @@ DallasTemperature motorTemp(&oneWire);
 VehicleConfig rwc;
 RWCComHandler comm(&rwc);
 
-uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick, motorTempTick, batteryTick;
+uint64_t motorTick, stabTick, commTick, motorRunawayDetectionTick, calibrationTick, motorTempTick, batteryTick, watchdogTick;
 int32_t motorMaxSpeedTime;
 
 void setup()
@@ -49,6 +49,9 @@ void setup()
     pinMode(WHITE_LED, OUTPUT);
     pinMode(GREEN_LED, OUTPUT);
     pinMode(RED_LED, OUTPUT);
+
+    esp_task_wdt_init(WATCHDOG_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
 }
 
 void loop()
@@ -187,6 +190,12 @@ void loop()
         }
         float adcVoltage = ((float)totalMv / (float)ADC_OVERSAMPLE) * ADC_12BIT_CONV;
         rwc.batteryVoltage = ADC_REAL(adcVoltage) / BATTERY_VOLTAGE_DIV_K;
+    }
+
+    if (millis() - watchdogTick > WATCHDOG_UPDATE_PERIOD)
+    {
+        watchdogTick = millis();
+        esp_task_wdt_reset();
     }
 
     comm.handler();

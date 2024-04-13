@@ -19,6 +19,7 @@
 #include <utility/imumaths.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <esp_task_wdt.h>
 
 #include "filter.h"
 #include "motor.h"
@@ -39,6 +40,10 @@
 #if MOTOR_TEMP_CHCK_PERIOD < 750
     #error "MOTOR_TEMP_CHCK_PERIOD must be greater than 750ms!"
 #endif
+
+#define WATCHDOG_TIMEOUT 5 ///< Watchdog timeout in s
+#define WATCHDOG_UPDATE_FREQ 1 ///< Watchdog update frequency in Hz
+#define WATCHDOG_UPDATE_PERIOD 1000 / WATCHDOG_UPDATE_FREQ - 1
 
 #define BATTERY_VOLTAGE_CHCK_FREQ 10 ///< Battery voltage check frequency in Hz
 #define BATTERY_VOLTAGE_CHCK_PERIOD 1000 / BATTERY_VOLTAGE_CHCK_FREQ - 1

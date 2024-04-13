@@ -28,6 +28,7 @@ Green LED is used for gyroscope calibration, red for magnetometer calibration.
 - Motor runaway timer is implemented to disable the system in case the motor reaches its maximum
 speed and thus control over the system is lost.
 - Motor temperature readings can be used to determine if the motor is in operational conditions.
+- Watchdog timer that reboots the system if not reset after 5 seconds.
 
 ## Changes & fixes:
 - The motor is driven without the boost converter, as it was creating strong magnetic field,
